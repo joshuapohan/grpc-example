@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option go_package="primepb";
+
+message PrimeRequest {
+  int32 input = 1;
+}
+
+message PrimeResponse {
+  int32 result = 1;
+}
+
+service PrimeDecomposer{
+  rpc Decompose(PrimeRequest) returns (stream PrimeResponse);
+}
