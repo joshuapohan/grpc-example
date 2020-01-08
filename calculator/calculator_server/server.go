@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"io"
 
 	"google.golang.org/grpc"
 
@@ -22,6 +23,32 @@ func (*server) Add(ctx context.Context, req *calculatorpb.CalculatorRequest) (*c
 		Result: result,
 	}
 	return res, nil
+}
+
+func (*server) Average(stream calculatorpb.CalculateService_AverageServer) error {
+	fmt.Printf("Average invoked with client streaming")
+	count := 0
+	var sum int32 = 0
+	var res float32 = 0.0
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			if count > 0 {
+				res = float32(sum) / float32(count)
+			} else{
+				res = 0
+			}
+			return stream.SendAndClose(&calculatorpb.AverageResponse{
+				Result: res,
+			})
+		}
+		if err != nil {
+			log.Fatalf("Error when reading client stream: ", err)
+		}
+		value := req.GetInput()
+		sum += value
+		count++
+	}
 }
 
 func main() {

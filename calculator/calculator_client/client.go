@@ -18,7 +18,8 @@ func main() {
 	defer cc.Close()
 
 	c := calculatorpb.NewCalculateServiceClient(cc)
-	doUnary(c)
+	//doUnary(c)
+	doAverage(c)
 }
 
 func doUnary(c calculatorpb.CalculateServiceClient) {
@@ -33,4 +34,34 @@ func doUnary(c calculatorpb.CalculateServiceClient) {
 		log.Fatalf("Failed to call calculate method %v", err)
 	}
 	fmt.Printf("Response : %v", res)
+}
+
+func doAverage(c calculatorpb.CalculateServiceClient){
+	req := []*calculatorpb.AverageRequest{
+		&calculatorpb.AverageRequest{
+			Input:5,
+		},
+		&calculatorpb.AverageRequest{
+			Input:13,
+		},
+		&calculatorpb.AverageRequest{
+			Input:32,
+		},
+		&calculatorpb.AverageRequest{
+			Input:8,
+		},
+	}
+
+	stream, err := c.Average(context.Background())
+	if err != nil {
+		log.Fatalf("Failed executing rpc function")
+	}
+	for _, msg := range req {
+		stream.Send(msg)
+	}
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("Error while receiving average ")
+	}
+	fmt.Printf("Average Response: %v ", res)
 }
