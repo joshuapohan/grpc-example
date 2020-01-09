@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"io"
+	_ "sync"
+	"time"
 
 	"google.golang.org/grpc"
 
@@ -21,7 +23,8 @@ func main() {
 	c := greetpb.NewGreetServiceClient(cc)
 	//doUnary(c)
 	//doServerStreaming(c)
-	doClientStreaming(c)
+	//doClientStreaming(c)
+	doBidirectionalStreaming(c)
 }
 
 func doUnary(c greetpb.GreetServiceClient) {
@@ -97,4 +100,61 @@ func doClientStreaming(c greetpb.GreetServiceClient){
 		log.Fatalf("Error while receiving long greet ", err)
 	}
 	fmt.Printf("LongGreet Response: %v\n", res)
+}
+
+func doBidirectionalStreaming(c greetpb.GreetServiceClient){
+	fmt.Println("Bidirectional streaming")
+
+	requests := []*greetpb.GreetEveryoneRequest{
+		&greetpb.GreetEveryoneRequest {
+			Greeting: &greetpb.Greeting{
+				FirstName: "Stefan",
+			},
+		},
+		&greetpb.GreetEveryoneRequest {
+			Greeting: &greetpb.Greeting{
+				FirstName: "John",
+			},
+		},
+		&greetpb.GreetEveryoneRequest {
+			Greeting: &greetpb.Greeting{
+				FirstName: "Joe",
+			},
+		},
+	}
+
+	//Initialize WaitGroup
+	waitch := make(chan struct{})
+
+	stream, err := c.GreetEveryone(context.Background())
+	if err != nil {
+		log.Fatalf("Error while calling long greet ", err)
+	}
+
+	go func(){
+		for _, msg := range requests {
+			fmt.Printf("Sending Request %v \n", msg.GetGreeting().GetFirstName())
+			stream.Send(msg)
+			time.Sleep(500 * time.Millisecond)
+		}
+		stream.CloseSend()
+	}()
+
+	go func(){
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				close(waitch)
+				break
+			}
+			if err != nil{
+				log.Fatalf("Error receiving stream from server: ", err)
+				close(waitch)
+				break
+			}
+			fmt.Printf("LongGreet Response: %v\n", res)
+		}
+	}()
+
+	<- waitch
 }

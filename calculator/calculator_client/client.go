@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"io"
+	"time"
 
 	"google.golang.org/grpc"
 
@@ -19,7 +21,8 @@ func main() {
 
 	c := calculatorpb.NewCalculateServiceClient(cc)
 	//doUnary(c)
-	doAverage(c)
+	//doAverage(c)
+	doMaximum(c)
 }
 
 func doUnary(c calculatorpb.CalculateServiceClient) {
@@ -64,4 +67,61 @@ func doAverage(c calculatorpb.CalculateServiceClient){
 		log.Fatalf("Error while receiving average ")
 	}
 	fmt.Printf("Average Response: %v ", res)
+}
+
+func doMaximum(c calculatorpb.CalculateServiceClient) {
+	input := []*calculatorpb.MaximumRequest{
+		&calculatorpb.MaximumRequest{
+			Input:3,
+		},
+		&calculatorpb.MaximumRequest{
+			Input:2,
+		},
+		&calculatorpb.MaximumRequest{
+			Input:7,
+		},
+		&calculatorpb.MaximumRequest{
+			Input:9,
+		},
+		&calculatorpb.MaximumRequest{
+			Input:1,
+		},
+		&calculatorpb.MaximumRequest{
+			Input:33,
+		},
+	}
+
+	waitch := make(chan struct{})
+
+	fmt.Println("Calling maximum rpc service")
+	stream, err := c.Maximum(context.Background())
+	if err != nil {
+		log.Fatalf("Error when calling maximum service: %v", err)
+	}
+
+	go func(){
+		for _, msg := range input {
+			fmt.Printf("Sending request: %v \n", msg)
+			stream.Send(msg)
+			time.Sleep(500 * time.Millisecond)
+		}
+		stream.CloseSend()
+	}()
+
+	go func(){
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				close(waitch)
+				break
+			}
+			if err != nil {
+				log.Fatalf("Error reading server response stream: %v", err)
+				break
+			}
+			fmt.Println("Maximum value: ", res.GetResult())
+		}
+	}()
+
+	<- waitch
 }

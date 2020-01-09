@@ -51,6 +51,29 @@ func (*server) Average(stream calculatorpb.CalculateService_AverageServer) error
 	}
 }
 
+func (*server) Maximum(stream calculatorpb.CalculateService_MaximumServer) error {
+	fmt.Println("Bidirection maximum function called")
+	var curMax int32 = 0
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			log.Fatalf("Error when reading client stream: %v ", err)
+			return err
+		}
+		curValue := req.GetInput()
+		if curValue > curMax {
+			curMax = curValue
+		}
+		stream.Send(&calculatorpb.MaximumResponse{
+			Result: curMax,
+		})
+	}
+	return nil
+}
+
 func main() {
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 	if err != nil {

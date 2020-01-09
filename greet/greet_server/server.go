@@ -60,6 +60,24 @@ func (*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
 	return nil
 }
 
+func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) error {
+	fmt.Println("Greet Everyone invoked with bidirectional rpc call")
+	for {
+		req, err := stream.Recv()
+		result := "Hello " + req.GetGreeting().GetFirstName()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			log.Fatalf("Error while reading client stream: ", err)
+		}
+		stream.Send(&greetpb.GreetEveryoneResponse{
+			Result: result,
+		})
+	}
+	return nil
+}
+
 func main() {
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 	if err != nil {
