@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/codes"
 
 	"github.com/joshuapohan/grpc-example/calculator/calculatorpb"
 )
@@ -22,7 +24,8 @@ func main() {
 	c := calculatorpb.NewCalculateServiceClient(cc)
 	//doUnary(c)
 	//doAverage(c)
-	doMaximum(c)
+	//doMaximum(c)
+	doSquareRoot(c)
 }
 
 func doUnary(c calculatorpb.CalculateServiceClient) {
@@ -124,4 +127,24 @@ func doMaximum(c calculatorpb.CalculateServiceClient) {
 	}()
 
 	<- waitch
+}
+
+func doSquareRoot(c calculatorpb.CalculateServiceClient){
+	inp := &calculatorpb.SquareRootRequest {
+		Input: -6,
+	}
+	res, err :=	c.SquareRoot(context.Background(), inp)
+	if err != nil {
+		respErr, ok := status.FromError(err)
+		if ok {
+			fmt.Println(respErr.Message())
+			fmt.Println(respErr.Code())
+			if respErr.Code() == codes.InvalidArgument {
+				fmt.Println("We probably sent and invalid argument")
+			}
+		} else {
+			log.Fatalf("Big Error calling Square Root %v", err)
+		}
+	}
+	fmt.Println("Result is :", res.GetResult())
 }

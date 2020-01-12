@@ -32,8 +32,19 @@ message MaximumResponse {
   int32 result = 1;
 }
 
+message SquareRootRequest {
+  int32 input = 1;
+}
+
+message SquareRootResponse {
+  double result = 1;
+}
+
 service CalculateService{
     rpc Add(CalculatorRequest) returns (CalculatorResponse) {};
     rpc Average(stream AverageRequest) returns (AverageResponse){};
     rpc Maximum(stream MaximumRequest) returns (stream MaximumResponse){};
+
+    // will throw exception if input is negative, error is of type INVALID_ARGUMENT
+    rpc SquareRoot(SquareRootRequest) returns (SquareRootResponse);
 }

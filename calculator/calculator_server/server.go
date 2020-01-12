@@ -6,9 +6,12 @@ import (
 	"log"
 	"net"
 	"io"
+	"math"
 
 	"google.golang.org/grpc"
-
+	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/codes"
+	
 	"github.com/joshuapohan/grpc-example/calculator/calculatorpb"
 )
 
@@ -72,6 +75,24 @@ func (*server) Maximum(stream calculatorpb.CalculateService_MaximumServer) error
 		})
 	}
 	return nil
+}
+
+func (*server) 	SquareRoot(c context.Context, req *calculatorpb.SquareRootRequest) (*calculatorpb.SquareRootResponse, error) {
+	fmt.Println("Calculate Square Root rpc called")
+	input := req.GetInput()
+
+
+	if input > 0 {
+		res := &calculatorpb.SquareRootResponse{
+			Result: math.Sqrt(float64(input)),
+		}
+		return res, nil
+	} else{
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			fmt.Sprintf("Received a negative number: %v", input),
+		)
+	}
 }
 
 func main() {
